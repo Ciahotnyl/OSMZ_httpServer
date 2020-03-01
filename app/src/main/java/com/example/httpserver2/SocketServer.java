@@ -3,9 +3,7 @@ package com.example.httpserver2;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import android.webkit.MimeTypeMap;
 import android.util.Log;
-import android.os.Handler;
 
 public class SocketServer extends Thread {
 
@@ -35,14 +33,8 @@ public class SocketServer extends Thread {
 				Log.d("SERVER", "Socket Accepted");
 
 				ClientThread ct = new ClientThread(s);
-				HttpServerActivity.threadsView.setText("Funguje to?");
+				//HttpServerActivity.threadsView.setText("Funguje to?");
 				ct.start();
-
-				/*
-				Handler hnd = ct.getThreadHandler();
-				hnd.sendMessage(hnd.obtainMessage(ClientThread.SEND_CODE,0,0,null));
-				*/
-
 			}
 		}
 		catch (IOException e) {

@@ -1,10 +1,10 @@
 package com.example.httpserver2;
 
-import android.os.Handler;
+import android.os.Bundle;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,9 +17,8 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 
 public class ClientThread extends Thread {
-    //private Handler mHandler;
-    public static final int SEND_CODE = 1;
-    Socket s;
+    private String msg;
+    private Socket s;
 
     public ClientThread(Socket s) {
         this.s = s;
@@ -27,18 +26,8 @@ public class ClientThread extends Thread {
 
     @Override
     public void run(){
-
         try{
-            /*
-            mHandler = new Handler(){
-                @Override
-                public void handleMessage(Message msg) {
-                    if (msg.what == SEND_CODE) {
-                        // Send the file using bluetooth
-                    }
-                }
-            };
-            */
+            Looper.prepare();
             OutputStream o = s.getOutputStream();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -58,14 +47,14 @@ public class ClientThread extends Thread {
             File f = new File(filePath);
             if(f.exists()){
                 if(f.isFile()){
-                    //TODO zobrazení souboru
                     if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
                         out.write("HTTP/1.0 200 OK\n" +
                                 "Content-Type: " + getFileType(filePath) + "\n"+
                                 "Content-Length: " + f.length() + "\n" +
                                 "\n");
                         out.flush();
-
+                        msg = "URI : "+ uri + "\n Content type: "+ getFileType(filePath) +"\n Size: "+f.length();
+                        sendMsg(msg);
                         FileInputStream fileInputStream = new FileInputStream(f);
                         byte[] fileBytes = new byte[2048];
                         while (fileInputStream.read(fileBytes) != 0) {
@@ -80,6 +69,8 @@ public class ClientThread extends Thread {
                                 "Content-Type: text/html\n"+
                                 "\n");
                         out.flush();
+                        msg = "URI : "+ uri + "\n Content type: "+ getFileType(filePath) +"\n Size: "+f.length();
+                        sendMsg(msg);
                         while(line != null){
                             out.write(line+"\n");
                             line = reader.readLine();
@@ -108,6 +99,9 @@ public class ClientThread extends Thread {
                     resultList += "</body>\n" +
                             "</html>";
                     out.write(resultList);
+                    out.flush();
+                    msg = "Directory";
+                    sendMsg(msg);
                 }
             }
             else {
@@ -132,7 +126,7 @@ public class ClientThread extends Thread {
         String type = null;
 
         if (path.charAt(path.length() - 1) == '/') {
-            path = path.substring(0, path.length() - 1);;
+            path = path.substring(0, path.length() - 1);
         }
 
         String extension = MimeTypeMap.getFileExtensionFromUrl(path);
@@ -143,9 +137,12 @@ public class ClientThread extends Thread {
 
         return type;
     }
-    /*
-    public Handler getThreadHandler() {
-        return mHandler;
+    private void sendMsg(String m){
+
+        Message ms = MainActivity.myHandler.obtainMessage();
+        Bundle bundle = new Bundle();
+        bundle.putCharSequence("list", m);
+        ms.setData(bundle);
+        MainActivity.myHandler.sendMessage(ms);
     }
-    */
 }
