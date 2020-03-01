@@ -1,5 +1,7 @@
 package com.example.httpserver2;
 
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
@@ -13,9 +15,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.util.logging.Handler;
 
 public class ClientThread extends Thread {
+    //private Handler mHandler;
+    public static final int SEND_CODE = 1;
     Socket s;
 
     public ClientThread(Socket s) {
@@ -26,6 +29,16 @@ public class ClientThread extends Thread {
     public void run(){
 
         try{
+            /*
+            mHandler = new Handler(){
+                @Override
+                public void handleMessage(Message msg) {
+                    if (msg.what == SEND_CODE) {
+                        // Send the file using bluetooth
+                    }
+                }
+            };
+            */
             OutputStream o = s.getOutputStream();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -95,7 +108,6 @@ public class ClientThread extends Thread {
                     resultList += "</body>\n" +
                             "</html>";
                     out.write(resultList);
-                    Log.d("List", resultList);
                 }
             }
             else {
@@ -104,7 +116,7 @@ public class ClientThread extends Thread {
                         "\n" +
                         "<html>\n" +
                         "<body>\n" +
-                        "<h1>Chyba - TEST OSMZ</h1>\n" +
+                        "<h1>Chyba - OSMZ</h1>\n" +
                         "</body>\n" +
                         "</html>");
             }
@@ -113,8 +125,6 @@ public class ClientThread extends Thread {
 
         }
         catch (IOException e) {
-
-            Log.d("SRV", "Error");
             e.printStackTrace();
         }
     }
@@ -133,4 +143,9 @@ public class ClientThread extends Thread {
 
         return type;
     }
+    /*
+    public Handler getThreadHandler() {
+        return mHandler;
+    }
+    */
 }

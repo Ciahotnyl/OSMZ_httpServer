@@ -5,11 +5,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import android.webkit.MimeTypeMap;
 import android.util.Log;
+import android.os.Handler;
 
 public class SocketServer extends Thread {
 
 	ServerSocket serverSocket;
 	public final int port = 12345;
+
 	boolean bRunning;
 
 	public void close() {
@@ -35,6 +37,12 @@ public class SocketServer extends Thread {
 				ClientThread ct = new ClientThread(s);
 				HttpServerActivity.threadsView.setText("Funguje to?");
 				ct.start();
+
+				/*
+				Handler hnd = ct.getThreadHandler();
+				hnd.sendMessage(hnd.obtainMessage(ClientThread.SEND_CODE,0,0,null));
+				*/
+
 			}
 		}
 		catch (IOException e) {
@@ -49,24 +57,6 @@ public class SocketServer extends Thread {
 			serverSocket = null;
 			bRunning = false;
 		}
-	}
-
-	private static String getFileType(String path) {
-		String type = null;
-
-		if (path.charAt(path.length() - 1) == '/') {
-			path = path.substring(0, path.length() - 1);;
-		}
-
-		String extension = MimeTypeMap.getFileExtensionFromUrl(path);
-		if (extension != null) {
-			MimeTypeMap mime = MimeTypeMap.getSingleton();
-			type = mime.getMimeTypeFromExtension(extension);
-		}
-		return type;
-	}
-	private static void run2(){
-
 	}
 }
 
