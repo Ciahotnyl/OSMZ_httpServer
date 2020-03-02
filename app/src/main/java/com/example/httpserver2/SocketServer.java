@@ -3,13 +3,24 @@ package com.example.httpserver2;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
+
+import android.os.Handler;
 import android.util.Log;
 
 public class SocketServer extends Thread {
 
 	ServerSocket serverSocket;
-	public final int port = 12345;
 
+	Handler handler;
+	Semaphore sem = new Semaphore(2);
+
+	public SocketServer (Handler h) {
+		handler = h;
+
+	}
+
+	public final int port = 12345;
 	boolean bRunning;
 
 	public void close() {
@@ -32,12 +43,12 @@ public class SocketServer extends Thread {
 				Socket s = serverSocket.accept();
 				Log.d("SERVER", "Socket Accepted");
 
-				ClientThread ct = new ClientThread(s);
-				//HttpServerActivity.threadsView.setText("Funguje to?");
+				sem.acquire();
+				ClientThread ct = new ClientThread(s, handler, sem);
 				ct.start();
 			}
 		}
-		catch (IOException e) {
+		catch (IOException | InterruptedException e) {
 			if (serverSocket != null && serverSocket.isClosed())
 				Log.d("SERVER", "Normal exit");
 			else {
@@ -51,7 +62,5 @@ public class SocketServer extends Thread {
 		}
 	}
 }
-
-// TODO 2: Posílat z klientských vláken stavové informace (např URI + objem dat) -> handler.obtainMessage -> HANDLESTATE
 
 // TODO 3: Posílat i manifest

@@ -1,7 +1,7 @@
 package com.example.httpserver2;
 
 import android.os.Bundle;
-import android.os.Looper;
+import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -15,19 +15,24 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 public class ClientThread extends Thread {
     private String msg;
     private Socket s;
 
-    public ClientThread(Socket s) {
+    Semaphore sem;
+    Handler handler;
+
+    public ClientThread(Socket s, Handler h, Semaphore sem) {
         this.s = s;
+        this.handler = h;
+        this.sem = sem;
     }
 
     @Override
     public void run(){
         try{
-            Looper.prepare();
             OutputStream o = s.getOutputStream();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -43,7 +48,7 @@ public class ClientThread extends Thread {
 
             String externalStorageDirectoryPath = "/sdcard/Picture";
             String filePath = externalStorageDirectoryPath + uri;
-
+            int x;
             File f = new File(filePath);
             if(f.exists()){
                 if(f.isFile()){
@@ -115,11 +120,15 @@ public class ClientThread extends Thread {
                         "</html>");
             }
             out.flush();
+
             s.close();
 
         }
         catch (IOException e) {
             e.printStackTrace();
+        }
+        finally {
+            sem.release();
         }
     }
     private static String getFileType(String path) {
@@ -137,12 +146,13 @@ public class ClientThread extends Thread {
 
         return type;
     }
-    private void sendMsg(String m){
-
-        Message ms = MainActivity.myHandler.obtainMessage();
+    private synchronized void sendMsg(String m){
         Bundle bundle = new Bundle();
-        bundle.putCharSequence("list", m);
-        ms.setData(bundle);
-        MainActivity.myHandler.sendMessage(ms);
+        bundle.putString("list", m);
+        Message message = Message.obtain();
+        message.setData(bundle);
+        Log.d("send", ""+message);
+        handler.sendMessage(message);
     }
+
 }
