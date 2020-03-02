@@ -48,7 +48,6 @@ public class ClientThread extends Thread {
 
             String externalStorageDirectoryPath = "/sdcard/Picture";
             String filePath = externalStorageDirectoryPath + uri;
-            int x;
             File f = new File(filePath);
             if(f.exists()){
                 if(f.isFile()){
