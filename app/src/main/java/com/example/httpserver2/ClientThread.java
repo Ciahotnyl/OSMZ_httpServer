@@ -12,13 +12,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
 import static com.example.httpserver2.HttpServerActivity.obrazek;
+
 
 public class ClientThread extends Thread {
     Socket s;
@@ -26,6 +30,7 @@ public class ClientThread extends Thread {
     Handler handler;
     Semaphore sem;
     String snapshot = "/camera/snapshot";
+    String process = "/cgi-bin/";
 
 
     public ClientThread(Socket s, Handler h, Semaphore sem) {
@@ -67,7 +72,53 @@ public class ClientThread extends Thread {
 
             File f = new File(filePath);
 
-            if(uri.equals(snapshot) && obrazek != null){
+            if(uri.startsWith(process)){
+                String command = uri.substring(process.length());
+                String[] splitted = command.split("%");
+                String arg = "";
+
+                if(splitted.length > 1){
+                    String[] parameters = Arrays.copyOfRange(splitted, 1, splitted.length);
+
+                    for(int i = 0; i < parameters.length; i++){
+                        arg += parameters[i] + ",";
+                    }
+                    arg = arg.substring(0, arg.length() - 1 );
+                    Log.d("arg", arg);
+                }
+
+                try {
+                    ProcessBuilder pb;
+                    if(splitted.length > 1)
+                    {
+                        pb = new ProcessBuilder(splitted[0], arg);
+                    } else{
+                        pb = new ProcessBuilder(command);
+                    }
+
+                    final Process p=pb.start();
+                    BufferedReader br = new BufferedReader(
+                            new InputStreamReader(
+                                    p.getInputStream()));
+                    String line;
+                    String text = "HTTP/1.0 200 OK\n" +
+                            "Content-Type: text/html\n" +
+                            "\n" +
+                            "<html>\n" +
+                            "<body>\n" +
+                            "<h1>Spousteni procesu</h1>\n";
+                    while((line=br.readLine()) != null) {
+                        text += "<p>" + line + "</p>\n";
+                    }
+                    text += "</body>\n" +
+                            "</html>";
+                    out.write(text);
+
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+            }
+            else if(uri.equals(snapshot) && obrazek != null){
                 out.write("HTTP/1.0 200 OK\n" +
                         "Content-Type: image/jpeg\n" +
                         "Content-Length: " + obrazek.length + "\n" +
