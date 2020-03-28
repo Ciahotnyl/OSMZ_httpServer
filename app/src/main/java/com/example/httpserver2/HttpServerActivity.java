@@ -18,10 +18,13 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,12 +39,12 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 	private Camera mCamera;
 	private CameraPreview mPreview;
 	static TextView tv;
+	static byte[] obrazek;
 	static TextView allView;
 	private int TransferredCount = 0;
 	int permits;
 	Timer t;
 	TimerTask timerTask;
-	//boolean run;
 
 
 	@Override
@@ -168,22 +171,11 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
-
-			File pictureFile = new File("/sdcard/Picture/abc.jpeg");
-			if (pictureFile == null){
-				Log.d("PIC", "Error creating media file, check storage permissions");
+			if(data == null)
+			{
 				return;
 			}
-
-			try {
-				FileOutputStream fos = new FileOutputStream(pictureFile);
-				fos.write(data);
-				fos.close();
-			} catch (FileNotFoundException e) {
-				Log.d("PIC", "File not found: " + e.getMessage());
-			} catch (IOException e) {
-				Log.d("PIC", "Error accessing file: " + e.getMessage());
-			}
+			obrazek = Arrays.copyOf(data, data.length);
 		}
 	};
 
