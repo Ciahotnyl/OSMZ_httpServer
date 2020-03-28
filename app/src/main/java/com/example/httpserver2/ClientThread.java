@@ -18,11 +18,11 @@ import java.net.Socket;
 import java.util.concurrent.Semaphore;
 
 public class ClientThread extends Thread {
-    private String msg;
-    private Socket s;
-
-    Semaphore sem;
+    Socket s;
+    String msg;
     Handler handler;
+    Semaphore sem;
+
 
     public ClientThread(Socket s, Handler h, Semaphore sem) {
         this.s = s;
@@ -45,10 +45,24 @@ public class ClientThread extends Thread {
                 pole = tmp.split("[\\s+]");
                 uri = pole[1];
             }
+            if(uri.contains("?rand")){
+                Log.d("SRV", "URI BEFORE: -" + uri + "-");
+                StringBuilder temp = new StringBuilder();
+                for (char c : uri.toCharArray()) {
+                    if(c == '?'){
+                        break;
+                    }
+                    temp.append(c);
+                }
+                uri = temp.toString();
+            }
 
             String externalStorageDirectoryPath = "/sdcard/Picture";
             String filePath = externalStorageDirectoryPath + uri;
+
+
             File f = new File(filePath);
+
             if(f.exists()){
                 if(f.isFile()){
                     if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
@@ -57,8 +71,12 @@ public class ClientThread extends Thread {
                                 "Content-Length: " + f.length() + "\n" +
                                 "\n");
                         out.flush();
+
                         msg = "URI : "+ uri + "\n Content type: "+ getFileType(filePath) +"\n Size: "+f.length();
                         sendMsg(msg);
+
+
+
                         FileInputStream fileInputStream = new FileInputStream(f);
                         byte[] fileBytes = new byte[2048];
                         while (fileInputStream.read(fileBytes) != 0) {

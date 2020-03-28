@@ -1,9 +1,15 @@
 package com.example.httpserver2;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import android.os.Handler;
 import android.util.Log;
@@ -11,17 +17,17 @@ import android.util.Log;
 public class SocketServer extends Thread {
 
 	ServerSocket serverSocket;
-
 	Handler handler;
-	Semaphore sem = new Semaphore(2);
-
-	public SocketServer (Handler h) {
-		handler = h;
-
-	}
-
 	public final int port = 12345;
 	boolean bRunning;
+	Semaphore sem;
+	int permits;
+
+	public SocketServer (Handler h, int permits) {
+		handler = h;
+		sem = new Semaphore(permits);
+		this.permits = permits;
+	}
 
 	public void close() {
 		try {
@@ -38,14 +44,38 @@ public class SocketServer extends Thread {
 			Log.d("SERVER", "Creating Socket");
 			serverSocket = new ServerSocket(port);
 			bRunning = true;
+
 			while (bRunning) {
 				Log.d("SERVER", "Socket Waiting for connection");
 				Socket s = serverSocket.accept();
 				Log.d("SERVER", "Socket Accepted");
 
-				sem.acquire();
-				ClientThread ct = new ClientThread(s, handler, sem);
-				ct.start();
+				OutputStream o = s.getOutputStream();
+				BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
+				BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+
+				boolean bpermit = sem.tryAcquire(0, TimeUnit.SECONDS);
+				if(bpermit) {
+					ClientThread ct = new ClientThread(s, handler, sem);
+					ct.start();
+				} else{
+					Log.d("SRV", "SERVER IS BUSY");
+
+					String s1 = in.readLine();
+					out.write("HTTP/1.0 200 OK\n" +
+							"Content-Type: text/html\n" +
+							"<html>\n " +
+							"<body>\n " +
+							"\n"+
+							"<h1>Server is busy</h1>\n " +
+							"</body>\n " +
+							"</html>");
+					out.flush();
+
+					out.close();
+					o.close();
+					s.close();
+				}
 			}
 		}
 		catch (IOException | InterruptedException e) {
@@ -62,5 +92,3 @@ public class SocketServer extends Thread {
 		}
 	}
 }
-
-// TODO 3: Posílat i manifest
