@@ -31,6 +31,8 @@ public class ClientThread extends Thread {
     Semaphore sem;
     String snapshot = "/camera/snapshot";
     String process = "/cgi-bin/";
+    String stream = "/camera/stream";
+    byte[] showPicture;
 
 
     public ClientThread(Socket s, Handler h, Semaphore sem) {
@@ -72,7 +74,7 @@ public class ClientThread extends Thread {
 
             File f = new File(filePath);
 
-            if(uri.startsWith(process)){
+            if(uri.startsWith(process)){                //CGI-BIN
                 String command = uri.substring(process.length());
                 String[] splitted = command.split("%");
                 String arg = "";
@@ -118,7 +120,7 @@ public class ClientThread extends Thread {
                     System.out.println(ex);
                 }
             }
-            else if(uri.equals(snapshot) && obrazek != null){
+            else if(uri.equals(snapshot) && obrazek != null){   //SNAPSHOT
                 out.write("HTTP/1.0 200 OK\n" +
                         "Content-Type: image/jpeg\n" +
                         "Content-Length: " + obrazek.length + "\n" +
@@ -136,12 +138,50 @@ public class ClientThread extends Thread {
                     o.write(obrazek);
                 }
 
+
                 o.flush();
+            }
+            else if(uri.equals(stream) && obrazek != null){ //STREAM
+
+                /*
+                    Tady se zdárně přepisuje obrázek ve streamu, jak je možné vidět v Logu ("obr" a "obr2"),
+                    ale stránka se nerefreshuje automaticky. Při manuální refreshi vše zdárně funguje.
+                 */
+                out.write("HTTP/1.0 200 OK\n" +
+                        "Content-Type: multipart/x-mixed-replace;boundary=ciahotnyl\n" +
+                        "Content-Length: " + obrazek.length + "\n" +
+                        "\n");
+
+
+                msg = "URI : " + uri + "\n Content type: image/jpeg \n Size: " + obrazek.length;
+                sendMsg(msg);
+
+                while(true){
+                        out.flush();
+                        showPicture = obrazek;
+                        Log.d("obr", ""+obrazek);
+                        Log.d("obr2", ""+showPicture);
+
+                        out.write("--ciahotnyl\n" +
+                                "Content-Type: image/jpeg\n" +
+                                "Content-Length: " + showPicture.length + "\n\n");
+
+                        out.flush();
+
+                        ByteArrayInputStream bai = new ByteArrayInputStream(showPicture);
+
+                        while((bai.read()) != -1)
+                        {
+                            o.write(showPicture);
+                        }
+                        o.flush();
+                }
+
             }
             else {
                 if (f.exists()) {
                     if (f.isFile()) {
-                        if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {
+                        if (filePath.endsWith(".png") || filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) {     //Obrázky
                             out.write("HTTP/1.0 200 OK\n" +
                                     "Content-Type: " + getFileType(filePath) + "\n" +
                                     "Content-Length: " + f.length() + "\n" +
@@ -158,7 +198,7 @@ public class ClientThread extends Thread {
                                 o.write(fileBytes);
                             }
                             o.flush();
-                        } else {
+                        } else {    //Textové soubory
                             BufferedReader reader;
                             reader = new BufferedReader(new FileReader(filePath));
                             String line = reader.readLine();
@@ -175,7 +215,7 @@ public class ClientThread extends Thread {
                             out.flush();
                             reader.close();
                         }
-                    } else {
+                    } else {    //Výpis struktury
                         String path = externalStorageDirectoryPath + uri; // V rootu
                         File directory = new File(path + "/");
                         File[] files = directory.listFiles();
@@ -210,7 +250,6 @@ public class ClientThread extends Thread {
                 }
             }
             out.flush();
-
             s.close();
 
         }

@@ -1,7 +1,6 @@
 package com.example.httpserver2;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -17,16 +16,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -39,7 +34,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 	private Camera mCamera;
 	private CameraPreview mPreview;
 	static TextView tv;
-	static byte[] obrazek;
+	static byte[] obrazek;			// Obrázek pro Snapshot/Stream
 	static TextView allView;
 	private int TransferredCount = 0;
 	int permits;
@@ -66,13 +61,12 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
 		//---------------------------CAMERA-----------------------------------
 		mCamera = getCameraInstance();
-
-		// Create our Preview view and set it as the content of our activity.
 		mPreview = new CameraPreview(this, mCamera);
 		FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
 		preview.addView(mPreview);
-
+		/*
 		Button captureButton = (Button) findViewById(R.id.button_capture);
+
 		captureButton.setOnClickListener(
 				new View.OnClickListener(){
 					@Override
@@ -92,6 +86,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 					}
 				}
 		);
+
 		Button stopButton = (Button) findViewById(R.id.button_stop);
 		stopButton.setOnClickListener(
 				new View.OnClickListener() {
@@ -101,7 +96,19 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 					}
 				}
 		);
+		*/
+
+		// STREAM
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+		executor.scheduleAtFixedRate(cameraTakingPictures, 0, 3000, TimeUnit.MILLISECONDS);
 	}
+	// STREAM
+	Runnable cameraTakingPictures = new Runnable() {
+		public void run() {
+			mCamera.startPreview();
+			mCamera.takePicture(null, null, mPicture);
+		}
+	};
 
 	@Override
 	public void onClick(View v) {

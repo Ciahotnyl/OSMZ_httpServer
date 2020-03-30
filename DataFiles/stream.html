@@ -1,0 +1,19 @@
+<html>
+<body>
+<h1>TEST stream</h1>
+    
+<span>
+    <img src="/camera/snapshot" id="id1" class="NO-CACHE" />
+</span>
+
+</body>
+</html>
+
+<script type="text/javascript">
+
+setInterval(function() {
+    var image = document.getElementById('id1');
+    image.src = '/camera/snapshot?rand=' + Math.random();
+}, 3000);
+
+</script>   
